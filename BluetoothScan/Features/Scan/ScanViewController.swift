@@ -175,7 +175,17 @@ extension ScanViewController: UITableViewDataSource, UITableViewDelegate {
         content.secondaryTextProperties.color = .secondaryLabel
         content.secondaryTextProperties.numberOfLines = 0
         cell.contentConfiguration = content
-        cell.selectionStyle = .none
+        cell.selectionStyle = .default
+        cell.accessoryType = .disclosureIndicator
         return cell
     }
+
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        let device = displayedDevices[indexPath.row]
+        viewModel.stop()
+        let details = DeviceDetailsViewController(device: device)
+        navigationController?.pushViewController(details, animated: true)
+    }
+
 }
