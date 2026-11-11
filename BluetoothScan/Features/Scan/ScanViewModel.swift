@@ -1,0 +1,120 @@
+//
+//  ScanViewModel.swift
+//  BluetoothScan
+//
+//  Created by Кирилл Чернов on 10.11.2026.
+//
+
+import Foundation
+
+final class ScanViewModel {
+    enum State: Equatable {
+        case idle
+        case waiting
+        case scanning
+        case finished
+        case stopped
+        case failed
+    }
+
+    struct Notice {
+        let title: String
+        let message: String
+        let offersSettings: Bool
+    }
+
+    var onChange: (() -> Void)?
+    private(set) var kind: ScanKind = .bluetooth
+    private(set) var state: State = .idle
+    private(set) var devices: [ScannedDevice] = []
+    private(set) var progress: Double = 0
+    private(set) var session: ScanSession?
+    private var notice: Notice?
+    private let scanner: DeviceScanning
+
+    var isBusy: Bool { state == .waiting || state == .scanning }
+
+    init(scanner: DeviceScanning) {
+        self.scanner = scanner
+        scanner.onEvent = { [weak self] event in
+            self?.handle(event)
+        }
+    }
+
+    func selectKind(_ kind: ScanKind) {
+        guard !isBusy, self.kind != kind else { return }
+        self.kind = kind
+        devices = []
+        progress = 0
+        session = nil
+        notice = nil
+        state = .idle
+        onChange?()
+    }
+
+    func start() {
+        guard kind == .bluetooth, !isBusy else { return }
+        devices = []
+        progress = 0
+        session = nil
+        notice = nil
+        state = .waiting
+        onChange?()
+        scanner.start()
+    }
+
+    func stop() {
+        guard isBusy else { return }
+        scanner.stop()
+    }
+
+    func takeNotice() -> Notice? {
+        defer { notice = nil }
+        return notice
+    }
+
+    private func handle(_ event: ScanEvent) {
+        guard isBusy else { return }
+        switch event {
+        case .waiting:
+            state = .waiting
+        case .started:
+            state = .scanning
+            session = ScanSession(kind: kind)
+        case .discovered(var device):
+            guard state == .scanning else { return }
+            if let index = devices.firstIndex(where: { $0.id == device.id }) {
+                device.name = device.name ?? devices[index].name
+                devices[index] = device
+            } else {
+                devices.append(device)
+            }
+            session?.devices = devices
+        case .progress(let value):
+            guard state == .scanning else { return }
+            progress = min(max(value, 0), 1)
+        case .finished:
+            state = .finished
+            progress = 1
+            session?.finishedAt = Date()
+            let count = devices.count
+            notice = Notice(
+                title: "Scan complete",
+                message: "Found \(count) \(count == 1 ? "device" : "devices").",
+                offersSettings: false
+            )
+        case .cancelled:
+            state = .stopped
+            session?.finishedAt = Date()
+        case .failed(let error):
+            state = .failed
+            session?.finishedAt = Date()
+            notice = Notice(
+                title: "Unable to scan",
+                message: error.localizedDescription,
+                offersSettings: error == .permissionDenied
+            )
+        }
+        onChange?()
+    }
+}
