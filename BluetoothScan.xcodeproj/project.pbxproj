@@ -4,6 +4,12 @@
 	classes = {};
 	objectVersion = 56;
 	objects = {
+		13D23DFA0D024E3094050F3F = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models/ScanSession.swift"; sourceTree = "<group>"; };
+		B2835DAD538EE739FD98980C = { isa = PBXBuildFile; fileRef = 13D23DFA0D024E3094050F3F; };
+		7B1558BA22192BC3111F5816 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models/ScannedDevice.swift"; sourceTree = "<group>"; };
+		8707C2CB1D3EAB35EC0B78CC = { isa = PBXBuildFile; fileRef = 7B1558BA22192BC3111F5816; };
+		967A6AF920F8155D34C0DC71 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models/ScanKind.swift"; sourceTree = "<group>"; };
+		10343F791BB89946F8A364A2 = { isa = PBXBuildFile; fileRef = 967A6AF920F8155D34C0DC71; };
 		00000000000000000000000A = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		00000000000000000000000B = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		00000000000000000000000C = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -15,9 +21,9 @@
 		000000000000000000000017 = { isa = PBXBuildFile; fileRef = 00000000000000000000000D; };
 		00000000000000000000000F = { isa = PBXFileReference; explicitFileType = wrapper.application; path = BluetoothScan.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		00000000000000000000001E = { isa = PBXGroup; children = (00000000000000000000001F, 000000000000000000000020); sourceTree = "<group>"; };
-		00000000000000000000001F = { isa = PBXGroup; children = (00000000000000000000000A, 00000000000000000000000B, 00000000000000000000000C, 00000000000000000000000D, 00000000000000000000000E); path = BluetoothScan; sourceTree = "<group>"; };
+		00000000000000000000001F = { isa = PBXGroup; children = (13D23DFA0D024E3094050F3F, 7B1558BA22192BC3111F5816, 967A6AF920F8155D34C0DC71, 00000000000000000000000A, 00000000000000000000000B, 00000000000000000000000C, 00000000000000000000000D, 00000000000000000000000E); path = BluetoothScan; sourceTree = "<group>"; };
 		000000000000000000000020 = { isa = PBXGroup; children = (00000000000000000000000F); name = Products; sourceTree = "<group>"; };
-		000000000000000000000028 = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (000000000000000000000014, 000000000000000000000015, 000000000000000000000016); runOnlyForDeploymentPostprocessing = 0; };
+		000000000000000000000028 = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B2835DAD538EE739FD98980C, 8707C2CB1D3EAB35EC0B78CC, 10343F791BB89946F8A364A2, 000000000000000000000014, 000000000000000000000015, 000000000000000000000016); runOnlyForDeploymentPostprocessing = 0; };
 		000000000000000000000029 = { isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (000000000000000000000017); runOnlyForDeploymentPostprocessing = 0; };
 		00000000000000000000002A = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 		000000000000000000000032 = { isa = PBXNativeTarget; buildConfigurationList = 00000000000000000000003D; buildPhases = (000000000000000000000028, 00000000000000000000002A, 000000000000000000000029); buildRules = (); dependencies = (); name = BluetoothScan; productName = BluetoothScan; productReference = 00000000000000000000000F; productType = "com.apple.product-type.application"; };
