@@ -4,6 +4,12 @@
 <dict>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>Bluetooth access is used to discover nearby devices and display their signal strength.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_bluetoothscan._tcp</string>
+	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Local network access is used to discover devices connected to your Wi-Fi network.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
