@@ -12,30 +12,24 @@ BluetoothScan — приложение для iPhone, которое обнар�
 
 <div style="display: flex; gap: 10px;">
     <img width="150" alt="Bluetooth до сканирования — светлая тема" src="docs/screenshots/light-bluetooth-ready.png" />
-    <img width="150" alt="Результаты Bluetooth — светлая тема" src="docs/screenshots/light-bluetooth-results.png" />
     <img width="150" alt="LAN до сканирования — светлая тема" src="docs/screenshots/light-lan-ready.png" />
-    <img width="150" alt="Результаты LAN — светлая тема" src="docs/screenshots/light-lan-results.png" />
 </div>
 
 <div style="display: flex; gap: 10px;">
     <img width="150" alt="Настройки — светлая тема" src="docs/screenshots/light-settings.png" />
     <img width="150" alt="История — светлая тема" src="docs/screenshots/light-history.png" />
-    <img width="150" alt="Детали устройства — светлая тема" src="docs/screenshots/light-device-details.png" />
 </div>
 
 #### Тёмная тема
 
 <div style="display: flex; gap: 10px;">
     <img width="150" alt="Bluetooth до сканирования — тёмная тема" src="docs/screenshots/dark-bluetooth-ready.png" />
-    <img width="150" alt="Результаты Bluetooth — тёмная тема" src="docs/screenshots/dark-bluetooth-results.png" />
     <img width="150" alt="LAN до сканирования — тёмная тема" src="docs/screenshots/dark-lan-ready.png" />
-    <img width="150" alt="Результаты LAN — тёмная тема" src="docs/screenshots/dark-lan-results.png" />
 </div>
 
 <div style="display: flex; gap: 10px;">
     <img width="150" alt="Настройки — тёмная тема" src="docs/screenshots/dark-settings.png" />
     <img width="150" alt="История — тёмная тема" src="docs/screenshots/dark-history.png" />
-    <img width="150" alt="Детали устройства — тёмная тема" src="docs/screenshots/dark-device-details.png" />
 </div>
 
 ### Демо-видео
