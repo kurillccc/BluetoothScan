@@ -8,11 +8,13 @@
 import UIKit
 
 final class MainTabBarController: UITabBarController {
+    private let sessionStore = CoreDataScanSessionStore()
+
     override func viewDidLoad() {
         super.viewDidLoad()
         viewControllers = [
             makeNavigationController(
-                root: ScanViewController(),
+                root: ScanViewController(viewModel: ScanViewModel(scanner: BluetoothScanner(), store: sessionStore)),
                 title: "Scan",
                 image: "antenna.radiowaves.left.and.right"
             ),

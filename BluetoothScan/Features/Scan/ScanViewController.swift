@@ -8,7 +8,7 @@
 import UIKit
 
 final class ScanViewController: UIViewController {
-    private let viewModel = ScanViewModel(scanner: BluetoothScanner())
+    private let viewModel: ScanViewModel
     private let kindControl = UISegmentedControl(items: ["Bluetooth", "LAN"])
     private let scanButton = UIButton(type: .system)
     private let progressView = UIProgressView(progressViewStyle: .default)
@@ -17,6 +17,16 @@ final class ScanViewController: UIViewController {
     private let emptyStateView = EmptyStateView()
     private var displayedDevices: [ScannedDevice] = []
     private let kinds = ScanKind.allCases
+
+    init(viewModel: ScanViewModel) {
+        self.viewModel = viewModel
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -142,7 +152,17 @@ final class ScanViewController: UIViewController {
               presentedViewController == nil,
               let notice = viewModel.takeNotice() else { return }
         let alert = UIAlertController(title: notice.title, message: notice.message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "OK", style: .cancel))
+        alert.addAction(UIAlertAction(title: "OK", style: .cancel) { [weak self, weak alert] _ in
+            guard let alert else { return }
+            self?.showNextNotice(after: alert)
+        })
+        if let session = notice.unsavedSession {
+            alert.addAction(UIAlertAction(title: "Retry", style: .default) { [weak self, weak alert] _ in
+                guard let alert else { return }
+                self?.viewModel.saveSession(session)
+                self?.showNextNotice(after: alert)
+            })
+        }
         if notice.offersSettings {
             alert.addAction(UIAlertAction(title: "Settings", style: .default) { _ in
                 guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
@@ -150,6 +170,12 @@ final class ScanViewController: UIViewController {
             })
         }
         present(alert, animated: true)
+    }
+
+    private func showNextNotice(after alert: UIAlertController) {
+        alert.dismiss(animated: true) { [weak self] in
+            self?.showNoticeIfNeeded()
+        }
     }
 }
 

@@ -21,6 +21,7 @@ final class ScanViewModel {
         let title: String
         let message: String
         let offersSettings: Bool
+        var unsavedSession: ScanSession? = nil
     }
 
     var onChange: (() -> Void)?
@@ -29,12 +30,14 @@ final class ScanViewModel {
     private(set) var devices: [ScannedDevice] = []
     private(set) var progress: Double = 0
     private(set) var session: ScanSession?
-    private var notice: Notice?
+    private var notices: [Notice] = []
+    private let store: ScanSessionStore
     private let scanner: DeviceScanning
 
     var isBusy: Bool { state == .waiting || state == .scanning }
 
-    init(scanner: DeviceScanning) {
+    init(scanner: DeviceScanning, store: ScanSessionStore) {
+        self.store = store
         self.scanner = scanner
         scanner.onEvent = { [weak self] event in
             self?.handle(event)
@@ -47,7 +50,6 @@ final class ScanViewModel {
         devices = []
         progress = 0
         session = nil
-        notice = nil
         state = .idle
         onChange?()
     }
@@ -57,7 +59,6 @@ final class ScanViewModel {
         devices = []
         progress = 0
         session = nil
-        notice = nil
         state = .waiting
         onChange?()
         scanner.start()
@@ -69,8 +70,8 @@ final class ScanViewModel {
     }
 
     func takeNotice() -> Notice? {
-        defer { notice = nil }
-        return notice
+        guard !notices.isEmpty else { return nil }
+        return notices.removeFirst()
     }
 
     private func handle(_ event: ScanEvent) {
@@ -98,23 +99,41 @@ final class ScanViewModel {
             progress = 1
             session?.finishedAt = Date()
             let count = devices.count
-            notice = Notice(
+            notices.append(Notice(
                 title: "Scan complete",
                 message: "Found \(count) \(count == 1 ? "device" : "devices").",
                 offersSettings: false
-            )
+            ))
         case .cancelled:
             state = .stopped
             session?.finishedAt = Date()
         case .failed(let error):
             state = .failed
             session?.finishedAt = Date()
-            notice = Notice(
+            notices.append(Notice(
                 title: "Unable to scan",
                 message: error.localizedDescription,
                 offersSettings: error == .permissionDenied
-            )
+            ))
+        }
+        if !isBusy, let session, session.finishedAt != nil {
+            saveSession(session)
         }
         onChange?()
+    }
+
+    func saveSession(_ session: ScanSession) {
+        store.save(session) { [weak self] result in
+            guard let self else { return }
+            if case .failure = result {
+                self.notices.append(Notice(
+                    title: "Scan not saved",
+                    message: "The scan results could not be saved to history. You can retry saving them.",
+                    offersSettings: false,
+                    unsavedSession: session
+                ))
+                self.onChange?()
+            }
+        }
     }
 }

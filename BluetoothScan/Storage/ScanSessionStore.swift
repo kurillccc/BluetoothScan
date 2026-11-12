@@ -20,3 +20,7 @@ protocol ScanSessionStore: AnyObject {
         completion: @escaping (Result<[ScanSession], Error>) -> Void
     )
 }
+
+extension Notification.Name {
+    static let scanHistoryDidChange = Notification.Name("scanHistoryDidChange")
+}

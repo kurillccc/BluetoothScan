@@ -56,7 +56,12 @@ final class CoreDataScanSessionStore: ScanSessionStore {
                 }
             }
             try context.save()
-        }, completion: completion)
+        }) { result in
+            completion(result)
+            if case .success = result {
+                NotificationCenter.default.post(name: .scanHistoryDidChange, object: self)
+            }
+        }
     }
 
     func fetch(
