@@ -13,6 +13,7 @@ enum ScanEvent {
     case discovered(ScannedDevice)
     case progress(Double)
     case finished
+    case timedOut
     case cancelled
     case failed(ScanError)
 }

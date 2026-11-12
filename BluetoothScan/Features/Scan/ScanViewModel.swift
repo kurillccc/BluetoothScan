@@ -94,14 +94,17 @@ final class ScanViewModel {
         case .progress(let value):
             guard state == .scanning else { return }
             progress = min(max(value, 0), 1)
-        case .finished:
+        case .finished, .timedOut:
             state = .finished
             progress = 1
             session?.finishedAt = Date()
             let count = devices.count
+            let reachedTimeLimit: Bool
+            if case .timedOut = event { reachedTimeLimit = true } else { reachedTimeLimit = false }
             notices.append(Notice(
-                title: "Scan complete",
-                message: "Found \(count) \(count == 1 ? "device" : "devices").",
+                title: reachedTimeLimit ? "Time limit reached" : "Scan complete",
+                message: "Found \(count) \(count == 1 ? "device" : "devices")."
+                    + (reachedTimeLimit ? " The scan stopped after 15 seconds; some devices may not have responded yet." : ""),
                 offersSettings: false
             ))
         case .cancelled:

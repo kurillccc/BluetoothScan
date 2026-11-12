@@ -7,3 +7,4 @@
 
 #import "MMLANScanner.h"
 #import "MMDevice.h"
+#import "LANProperties.h"
