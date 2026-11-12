@@ -13,9 +13,6 @@ BluetoothScan — приложение для iPhone, которое обнар�
 <div style="display: flex; gap: 10px;">
     <img width="150" alt="Bluetooth до сканирования — светлая тема" src="docs/screenshots/light-bluetooth-ready.png" />
     <img width="150" alt="LAN до сканирования — светлая тема" src="docs/screenshots/light-lan-ready.png" />
-</div>
-
-<div style="display: flex; gap: 10px;">
     <img width="150" alt="Настройки — светлая тема" src="docs/screenshots/light-settings.png" />
     <img width="150" alt="История — светлая тема" src="docs/screenshots/light-history.png" />
 </div>
@@ -25,9 +22,6 @@ BluetoothScan — приложение для iPhone, которое обнар�
 <div style="display: flex; gap: 10px;">
     <img width="150" alt="Bluetooth до сканирования — тёмная тема" src="docs/screenshots/dark-bluetooth-ready.png" />
     <img width="150" alt="LAN до сканирования — тёмная тема" src="docs/screenshots/dark-lan-ready.png" />
-</div>
-
-<div style="display: flex; gap: 10px;">
     <img width="150" alt="Настройки — тёмная тема" src="docs/screenshots/dark-settings.png" />
     <img width="150" alt="История — тёмная тема" src="docs/screenshots/dark-history.png" />
 </div>
