@@ -99,7 +99,6 @@ final class ScanViewController: UIViewController {
 
     private func render() {
         kindControl.isEnabled = !viewModel.isBusy
-        scanButton.isHidden = viewModel.kind == .lan
         var configuration = scanButton.configuration
         configuration?.title = viewModel.isBusy ? "Stop scan" : "Scan for devices"
         configuration?.showsActivityIndicator = viewModel.isBusy
@@ -111,12 +110,13 @@ final class ScanViewController: UIViewController {
         case .idle:
             statusLabel.text = viewModel.kind == .bluetooth
                 ? "Discover nearby Bluetooth LE devices in a 15-second scan."
-                : "Discover devices on your Wi-Fi network."
-        case .waiting: statusLabel.text = "Waiting for Bluetooth…"
+                : "Find responding devices on your Wi-Fi network in a 15-second scan."
+        case .waiting: statusLabel.text = viewModel.kind == .bluetooth
+            ? "Waiting for Bluetooth…" : "Checking local network access…"
         case .scanning: statusLabel.text = "Scanning · \(viewModel.devices.count) found"
         case .finished: statusLabel.text = "Scan complete · \(viewModel.devices.count) found"
         case .stopped: statusLabel.text = "Scan stopped · \(viewModel.devices.count) found"
-        case .failed: statusLabel.text = "Scan interrupted. Try again when Bluetooth is available."
+        case .failed: statusLabel.text = "Scan interrupted. Check access and try again."
         }
         if displayedDevices != viewModel.devices {
             displayedDevices = viewModel.devices
@@ -129,7 +129,7 @@ final class ScanViewController: UIViewController {
             title: viewModel.isBusy ? "Looking for devices" : "No devices found",
             message: viewModel.kind == .bluetooth
                 ? "Keep nearby devices awake and advertising over Bluetooth."
-                : "Network devices will appear here after a scan."
+                : "Connect to Wi-Fi. Devices that respond to discovery will appear here."
         )
         showNoticeIfNeeded()
     }
@@ -190,14 +190,14 @@ extension ScanViewController: UITableViewDataSource, UITableViewDelegate {
         let device = displayedDevices[indexPath.row]
         var content = cell.defaultContentConfiguration()
         content.text = device.name ?? "Unnamed device"
-        let signal = device.rssi.map { "\($0) dBm" } ?? "RSSI unavailable"
-        let address: String
         switch device.address {
-        case .bluetooth(let uuid): address = uuid.uuidString
-        case .lan(let ip, _): address = ip
+        case .bluetooth(let uuid):
+            let signal = device.rssi.map { "\($0) dBm" } ?? "RSSI unavailable"
+            let status = device.connectionStatus?.rawValue.capitalized ?? "Unknown status"
+            content.secondaryText = "\(uuid.uuidString)\n\(signal) · \(status)"
+        case .lan(let ip, let mac):
+            content.secondaryText = "IP: \(ip)\nMAC: \(mac ?? "Not available")"
         }
-        let status = device.connectionStatus?.rawValue.capitalized ?? "Unknown status"
-        content.secondaryText = "\(address)\n\(signal) · \(status)"
         content.secondaryTextProperties.color = .secondaryLabel
         content.secondaryTextProperties.numberOfLines = 0
         cell.contentConfiguration = content

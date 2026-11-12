@@ -14,7 +14,7 @@ final class MainTabBarController: UITabBarController {
         super.viewDidLoad()
         viewControllers = [
             makeNavigationController(
-                root: ScanViewController(viewModel: ScanViewModel(scanner: BluetoothScanner(), store: sessionStore)),
+                root: ScanViewController(viewModel: ScanViewModel(scanner: BluetoothScanner(), lanScanner: LANScanner(), store: sessionStore)),
                 title: "Scan",
                 image: "antenna.radiowaves.left.and.right"
             ),

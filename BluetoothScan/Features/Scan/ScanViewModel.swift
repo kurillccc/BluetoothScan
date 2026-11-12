@@ -32,14 +32,22 @@ final class ScanViewModel {
     private(set) var session: ScanSession?
     private var notices: [Notice] = []
     private let store: ScanSessionStore
-    private let scanner: DeviceScanning
+    private let bluetoothScanner: DeviceScanning
+    private let lanScanner: DeviceScanning
+    private var scanner: DeviceScanning { kind == .bluetooth ? bluetoothScanner : lanScanner }
 
     var isBusy: Bool { state == .waiting || state == .scanning }
 
-    init(scanner: DeviceScanning, store: ScanSessionStore) {
+    init(scanner: DeviceScanning, lanScanner: DeviceScanning, store: ScanSessionStore) {
         self.store = store
-        self.scanner = scanner
+        self.bluetoothScanner = scanner
+        self.lanScanner = lanScanner
         scanner.onEvent = { [weak self] event in
+            guard self?.kind == .bluetooth else { return }
+            self?.handle(event)
+        }
+        lanScanner.onEvent = { [weak self] event in
+            guard self?.kind == .lan else { return }
             self?.handle(event)
         }
     }
@@ -55,7 +63,7 @@ final class ScanViewModel {
     }
 
     func start() {
-        guard kind == .bluetooth, !isBusy else { return }
+        guard !isBusy else { return }
         devices = []
         progress = 0
         session = nil
@@ -116,7 +124,7 @@ final class ScanViewModel {
             notices.append(Notice(
                 title: "Unable to scan",
                 message: error.localizedDescription,
-                offersSettings: error == .permissionDenied
+                offersSettings: error == .permissionDenied || error == .localNetworkDenied
             ))
         }
         if !isBusy, let session, session.finishedAt != nil {
