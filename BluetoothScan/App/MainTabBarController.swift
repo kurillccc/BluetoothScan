@@ -19,7 +19,7 @@ final class MainTabBarController: UITabBarController {
                 image: "antenna.radiowaves.left.and.right"
             ),
             makeNavigationController(
-                root: HistoryViewController(),
+                root: HistoryViewController(viewModel: HistoryViewModel(store: sessionStore)),
                 title: "History",
                 image: "clock"
             )
