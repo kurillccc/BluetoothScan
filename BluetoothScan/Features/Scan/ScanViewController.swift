@@ -115,6 +115,7 @@ final class ScanViewController: UIViewController {
             ? "Waiting for Bluetooth…" : "Checking local network access…"
         case .scanning: statusLabel.text = "Scanning · \(viewModel.devices.count) found"
         case .finished: statusLabel.text = "Scan complete · \(viewModel.devices.count) found"
+        case .timedOut: statusLabel.text = "Time limit reached · \(viewModel.devices.count) found"
         case .stopped: statusLabel.text = "Scan stopped · \(viewModel.devices.count) found"
         case .failed: statusLabel.text = "Scan interrupted. Check access and try again."
         }
