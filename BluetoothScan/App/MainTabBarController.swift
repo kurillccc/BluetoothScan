@@ -7,11 +7,22 @@
 
 import UIKit
 
+enum ScanAppearance {
+    static let accent = UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 0.37, green: 0.85, blue: 0.83, alpha: 1)
+            : UIColor(red: 0.02, green: 0.38, blue: 0.42, alpha: 1)
+    }
+
+    static let actionBackground = UIColor(red: 0.02, green: 0.35, blue: 0.40, alpha: 1)
+}
+
 final class MainTabBarController: UITabBarController {
     private let sessionStore = CoreDataScanSessionStore()
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        view.tintColor = ScanAppearance.accent
         viewControllers = [
             makeNavigationController(
                 root: ScanViewController(viewModel: ScanViewModel(scanner: BluetoothScanner(), lanScanner: LANScanner(), store: sessionStore)),

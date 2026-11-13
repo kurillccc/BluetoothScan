@@ -118,10 +118,13 @@ final class HistoryViewController: UITableViewController {
         let session = viewModel.sessions[indexPath.row]
         let kind = session.kind == .bluetooth ? "Bluetooth" : "LAN"
         var content = cell.defaultContentConfiguration()
-        content.text = "\(kind) · \(dateFormatter.string(from: session.startedAt))"
+        content.image = UIImage(systemName: session.kind == .bluetooth ? "antenna.radiowaves.left.and.right" : "wifi")
+        content.imageProperties.tintColor = ScanAppearance.accent
+        content.text = kind
         content.textProperties.numberOfLines = 0
         let count = session.devices.count
-        content.secondaryText = "\(count) \(count == 1 ? "device" : "devices")"
+        content.secondaryText = "\(dateFormatter.string(from: session.startedAt))\n\(count) \(count == 1 ? "device" : "devices")"
+        content.secondaryTextProperties.numberOfLines = 0
         content.secondaryTextProperties.color = .secondaryLabel
         cell.contentConfiguration = content
         cell.accessoryType = .disclosureIndicator

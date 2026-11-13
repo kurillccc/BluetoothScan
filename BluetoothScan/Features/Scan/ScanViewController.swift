@@ -12,8 +12,9 @@ final class ScanViewController: UIViewController {
     private let kindControl = UISegmentedControl(items: ["Bluetooth", "LAN"])
     private let scanButton = UIButton(type: .system)
     private let progressView = UIProgressView(progressViewStyle: .default)
+    private let modeLabel = UILabel()
     private let statusLabel = UILabel()
-    private let tableView = UITableView(frame: .zero, style: .plain)
+    private let tableView = UITableView(frame: .zero, style: .insetGrouped)
     private let emptyStateView = EmptyStateView()
     private var displayedDevices: [ScannedDevice] = []
     private let kinds = ScanKind.allCases
@@ -30,7 +31,7 @@ final class ScanViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = .systemGroupedBackground
         configureLayout()
         viewModel.onChange = { [weak self] in self?.render() }
         NotificationCenter.default.addObserver(
@@ -58,7 +59,18 @@ final class ScanViewController: UIViewController {
         kindControl.selectedSegmentIndex = 0
         kindControl.accessibilityLabel = "Scan type"
         kindControl.addTarget(self, action: #selector(scanKindChanged), for: .valueChanged)
-        scanButton.configuration = .filled()
+        var buttonConfiguration = UIButton.Configuration.filled()
+        buttonConfiguration.baseBackgroundColor = ScanAppearance.actionBackground
+        buttonConfiguration.baseForegroundColor = .white
+        buttonConfiguration.cornerStyle = .large
+        buttonConfiguration.imagePadding = 8
+        buttonConfiguration.contentInsets = NSDirectionalEdgeInsets(top: 14, leading: 16, bottom: 14, trailing: 16)
+        scanButton.configuration = buttonConfiguration
+        modeLabel.font = .preferredFont(forTextStyle: .title2)
+        modeLabel.adjustsFontForContentSizeCategory = true
+        modeLabel.numberOfLines = 0
+        modeLabel.accessibilityTraits.insert(.header)
+        progressView.progressTintColor = ScanAppearance.accent
         scanButton.addTarget(self, action: #selector(scanTapped), for: .touchUpInside)
         statusLabel.font = .preferredFont(forTextStyle: .subheadline)
         statusLabel.adjustsFontForContentSizeCategory = true
@@ -66,11 +78,17 @@ final class ScanViewController: UIViewController {
         statusLabel.numberOfLines = 0
         progressView.accessibilityLabel = "Scan progress"
 
-        let controls = UIStackView(arrangedSubviews: [kindControl, scanButton, statusLabel, progressView])
+        let controls = UIStackView(arrangedSubviews: [kindControl, modeLabel, statusLabel, progressView, scanButton])
         controls.axis = .vertical
         controls.spacing = 12
+        controls.isLayoutMarginsRelativeArrangement = true
+        controls.directionalLayoutMargins = NSDirectionalEdgeInsets(top: 16, leading: 16, bottom: 16, trailing: 16)
+        controls.backgroundColor = .secondarySystemGroupedBackground
+        controls.layer.cornerRadius = 20
+        controls.layer.cornerCurve = .continuous
         controls.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(controls)
+        tableView.backgroundColor = .clear
         tableView.dataSource = self
         tableView.delegate = self
         tableView.rowHeight = UITableView.automaticDimension
@@ -99,7 +117,9 @@ final class ScanViewController: UIViewController {
 
     private func render() {
         kindControl.isEnabled = !viewModel.isBusy
+        modeLabel.text = viewModel.kind == .bluetooth ? "Nearby Bluetooth" : "Local network"
         var configuration = scanButton.configuration
+        configuration?.image = UIImage(systemName: viewModel.isBusy ? "stop.fill" : "dot.radiowaves.left.and.right")
         configuration?.title = viewModel.isBusy ? "Stop scan" : "Scan for devices"
         configuration?.showsActivityIndicator = viewModel.isBusy
         scanButton.configuration = configuration
@@ -191,12 +211,15 @@ extension ScanViewController: UITableViewDataSource, UITableViewDelegate {
         let device = displayedDevices[indexPath.row]
         var content = cell.defaultContentConfiguration()
         content.text = device.name ?? "Unnamed device"
+        content.imageProperties.tintColor = ScanAppearance.accent
         switch device.address {
         case .bluetooth(let uuid):
+            content.image = UIImage(systemName: "antenna.radiowaves.left.and.right")
             let signal = device.rssi.map { "\($0) dBm" } ?? "RSSI unavailable"
             let status = device.connectionStatus?.rawValue.capitalized ?? "Unknown status"
             content.secondaryText = "\(uuid.uuidString)\n\(signal) · \(status)"
         case .lan(let ip, let mac):
+            content.image = UIImage(systemName: "wifi")
             content.secondaryText = "IP: \(ip)\nMAC: \(mac ?? "Not available")"
         }
         content.secondaryTextProperties.color = .secondaryLabel
