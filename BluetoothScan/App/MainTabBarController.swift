@@ -23,6 +23,15 @@ final class MainTabBarController: UITabBarController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.tintColor = ScanAppearance.accent
+        let appearance = UITabBarAppearance()
+        appearance.configureWithTransparentBackground()
+        appearance.backgroundColor = .clear
+        appearance.backgroundEffect = nil
+        appearance.shadowColor = .clear
+        tabBar.standardAppearance = appearance
+        tabBar.scrollEdgeAppearance = appearance
+        tabBar.isTranslucent = true
+        tabBar.backgroundColor = .clear
         viewControllers = [
             makeNavigationController(
                 root: ScanViewController(viewModel: ScanViewModel(scanner: BluetoothScanner(), lanScanner: LANScanner(), store: sessionStore)),

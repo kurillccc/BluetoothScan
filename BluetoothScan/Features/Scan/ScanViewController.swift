@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import Lottie
 
 final class ScanViewController: UIViewController {
     private let viewModel: ScanViewModel
@@ -17,6 +18,10 @@ final class ScanViewController: UIViewController {
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
     private let emptyStateView = EmptyStateView()
     private var displayedDevices: [ScannedDevice] = []
+    private let hero = UIStackView()
+    private let buttonHalo = UIView()
+    private let scanAnimation = LottieAnimationView(name: "ScanRadar")
+    private let resultsLabel = UILabel()
     private let kinds = ScanKind.allCases
 
     init(viewModel: ScanViewModel) {
@@ -42,6 +47,10 @@ final class ScanViewController: UIViewController {
             self, selector: #selector(showNoticeIfNeeded),
             name: UIApplication.didBecomeActiveNotification, object: nil
         )
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(updateScanAnimation),
+            name: UIAccessibility.reduceMotionStatusDidChangeNotification, object: nil
+        )
         render()
     }
 
@@ -55,64 +64,144 @@ final class ScanViewController: UIViewController {
         viewModel.stop()
     }
 
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        let width = tableView.bounds.width
+        guard width > 0 else { return }
+        let height = hero.systemLayoutSizeFitting(
+            CGSize(width: width, height: UIView.layoutFittingCompressedSize.height),
+            withHorizontalFittingPriority: .required, verticalFittingPriority: .fittingSizeLevel
+        ).height
+        if hero.frame.size != CGSize(width: width, height: height) {
+            hero.frame = CGRect(x: 0, y: 0, width: width, height: height)
+            tableView.tableHeaderView = hero
+        }
+        let footerHeight = emptyStateView.systemLayoutSizeFitting(
+            CGSize(width: max(1, width - 48), height: UIView.layoutFittingCompressedSize.height),
+            withHorizontalFittingPriority: .required, verticalFittingPriority: .fittingSizeLevel
+        ).height + 48
+        if let footer = tableView.tableFooterView, !footer.isHidden,
+           footer.frame.size != CGSize(width: width, height: footerHeight) {
+            footer.frame.size = CGSize(width: width, height: footerHeight)
+            tableView.tableFooterView = footer
+        }
+    }
+
     private func configureLayout() {
+        navigationItem.largeTitleDisplayMode = .never
         kindControl.selectedSegmentIndex = 0
         kindControl.accessibilityLabel = "Scan type"
         kindControl.addTarget(self, action: #selector(scanKindChanged), for: .valueChanged)
-        var buttonConfiguration = UIButton.Configuration.filled()
-        buttonConfiguration.baseBackgroundColor = ScanAppearance.actionBackground
-        buttonConfiguration.baseForegroundColor = .white
-        buttonConfiguration.cornerStyle = .large
-        buttonConfiguration.imagePadding = 8
-        buttonConfiguration.contentInsets = NSDirectionalEdgeInsets(top: 14, leading: 16, bottom: 14, trailing: 16)
-        scanButton.configuration = buttonConfiguration
+        var configuration = UIButton.Configuration.filled()
+        configuration.baseBackgroundColor = ScanAppearance.actionBackground
+        configuration.baseForegroundColor = .white
+        configuration.background.cornerRadius = 92
+        configuration.cornerStyle = .fixed
+        configuration.imagePlacement = .top
+        configuration.imagePadding = 12
+        configuration.preferredSymbolConfigurationForImage = UIImage.SymbolConfiguration(pointSize: 42, weight: .light)
+        configuration.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { attributes in
+            var result = attributes
+            result.font = UIFont.systemFont(ofSize: 22, weight: .semibold)
+            return result
+        }
+        scanButton.configuration = configuration
+        scanButton.layer.shadowColor = ScanAppearance.actionBackground.cgColor
+        scanButton.layer.shadowOpacity = 0.22
+        scanButton.layer.shadowRadius = 18
+        scanButton.layer.shadowOffset = CGSize(width: 0, height: 10)
+        scanButton.addTarget(self, action: #selector(scanTapped), for: .touchUpInside)
+
+        let radar = UIView()
+        buttonHalo.backgroundColor = ScanAppearance.accent.withAlphaComponent(0.07)
+        buttonHalo.layer.cornerRadius = 118
+        buttonHalo.layer.borderWidth = 1
+        buttonHalo.layer.borderColor = ScanAppearance.accent.withAlphaComponent(0.13).cgColor
+        buttonHalo.isUserInteractionEnabled = false
+        let innerRing = UIView()
+        innerRing.isUserInteractionEnabled = false
+        innerRing.layer.cornerRadius = 104
+        innerRing.layer.borderWidth = 1
+        innerRing.layer.borderColor = ScanAppearance.accent.withAlphaComponent(0.18).cgColor
+        for (element, size) in [(buttonHalo, CGFloat(236)), (innerRing, CGFloat(208)), (scanButton, CGFloat(184))] {
+            element.translatesAutoresizingMaskIntoConstraints = false
+            radar.addSubview(element)
+            NSLayoutConstraint.activate([
+                element.centerXAnchor.constraint(equalTo: radar.centerXAnchor),
+                element.centerYAnchor.constraint(equalTo: radar.centerYAnchor),
+                element.widthAnchor.constraint(equalToConstant: size),
+                element.heightAnchor.constraint(equalToConstant: size)
+            ])
+        }
+        scanAnimation.contentMode = .scaleAspectFit
+        scanAnimation.loopMode = .loop
+        scanAnimation.backgroundBehavior = .pauseAndRestore
+        scanAnimation.isUserInteractionEnabled = false
+        scanAnimation.isAccessibilityElement = false
+        scanAnimation.translatesAutoresizingMaskIntoConstraints = false
+        radar.insertSubview(scanAnimation, belowSubview: scanButton)
+        NSLayoutConstraint.activate([
+            scanAnimation.centerXAnchor.constraint(equalTo: radar.centerXAnchor),
+            scanAnimation.centerYAnchor.constraint(equalTo: radar.centerYAnchor),
+            scanAnimation.widthAnchor.constraint(equalToConstant: 264),
+            scanAnimation.heightAnchor.constraint(equalToConstant: 264)
+        ])
+        radar.heightAnchor.constraint(equalToConstant: 264).isActive = true
         modeLabel.font = .preferredFont(forTextStyle: .title2)
         modeLabel.adjustsFontForContentSizeCategory = true
         modeLabel.numberOfLines = 0
+        modeLabel.textAlignment = .center
         modeLabel.accessibilityTraits.insert(.header)
-        progressView.progressTintColor = ScanAppearance.accent
-        scanButton.addTarget(self, action: #selector(scanTapped), for: .touchUpInside)
         statusLabel.font = .preferredFont(forTextStyle: .subheadline)
         statusLabel.adjustsFontForContentSizeCategory = true
         statusLabel.textColor = .secondaryLabel
         statusLabel.numberOfLines = 0
+        statusLabel.textAlignment = .center
+        progressView.progressTintColor = ScanAppearance.accent
         progressView.accessibilityLabel = "Scan progress"
+        resultsLabel.font = .preferredFont(forTextStyle: .headline)
+        resultsLabel.adjustsFontForContentSizeCategory = true
+        resultsLabel.numberOfLines = 0
+        resultsLabel.accessibilityTraits.insert(.header)
 
-        let controls = UIStackView(arrangedSubviews: [kindControl, modeLabel, statusLabel, progressView, scanButton])
-        controls.axis = .vertical
-        controls.spacing = 12
-        controls.isLayoutMarginsRelativeArrangement = true
-        controls.directionalLayoutMargins = NSDirectionalEdgeInsets(top: 16, leading: 16, bottom: 16, trailing: 16)
-        controls.backgroundColor = .secondarySystemGroupedBackground
-        controls.layer.cornerRadius = 20
-        controls.layer.cornerCurve = .continuous
-        controls.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(controls)
+        hero.axis = .vertical
+        hero.spacing = 12
+        hero.isLayoutMarginsRelativeArrangement = true
+        hero.directionalLayoutMargins = NSDirectionalEdgeInsets(top: 16, leading: 24, bottom: 8, trailing: 24)
+        [kindControl, radar, modeLabel, statusLabel, progressView, resultsLabel].forEach(hero.addArrangedSubview)
+        hero.setCustomSpacing(28, after: statusLabel)
+        hero.setCustomSpacing(24, after: progressView)
         tableView.backgroundColor = .clear
         tableView.dataSource = self
         tableView.delegate = self
         tableView.rowHeight = UITableView.automaticDimension
         tableView.estimatedRowHeight = 100
-        tableView.tableFooterView = UIView()
+        tableView.tableHeaderView = hero
         tableView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(tableView)
-
-        let background = UIView()
+        let footer = UIView()
         emptyStateView.translatesAutoresizingMaskIntoConstraints = false
-        background.addSubview(emptyStateView)
-        tableView.backgroundView = background
+        footer.addSubview(emptyStateView)
+        tableView.tableFooterView = footer
         NSLayoutConstraint.activate([
-            controls.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
-            controls.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
-            controls.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
-            tableView.topAnchor.constraint(equalTo: controls.bottomAnchor, constant: 16),
+            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
-            emptyStateView.topAnchor.constraint(equalTo: background.topAnchor, constant: 24),
-            emptyStateView.leadingAnchor.constraint(equalTo: background.leadingAnchor, constant: 24),
-            emptyStateView.trailingAnchor.constraint(equalTo: background.trailingAnchor, constant: -24)
+            emptyStateView.topAnchor.constraint(equalTo: footer.topAnchor, constant: 24),
+            emptyStateView.leadingAnchor.constraint(equalTo: footer.leadingAnchor, constant: 24),
+            emptyStateView.trailingAnchor.constraint(equalTo: footer.trailingAnchor, constant: -24)
         ])
+    }
+
+    @objc private func updateScanAnimation() {
+        let shouldAnimate = viewModel.isBusy && !UIAccessibility.isReduceMotionEnabled
+        scanAnimation.isHidden = !shouldAnimate
+        if shouldAnimate {
+            if !scanAnimation.isAnimationPlaying { scanAnimation.play() }
+        } else {
+            scanAnimation.stop()
+        }
     }
 
     private func render() {
@@ -120,8 +209,11 @@ final class ScanViewController: UIViewController {
         modeLabel.text = viewModel.kind == .bluetooth ? "Nearby Bluetooth" : "Local network"
         var configuration = scanButton.configuration
         configuration?.image = UIImage(systemName: viewModel.isBusy ? "stop.fill" : "dot.radiowaves.left.and.right")
-        configuration?.title = viewModel.isBusy ? "Stop scan" : "Scan for devices"
-        configuration?.showsActivityIndicator = viewModel.isBusy
+        configuration?.title = viewModel.isBusy ? "Stop" : "Scan"
+        configuration?.showsActivityIndicator = false
+        scanButton.accessibilityLabel = viewModel.isBusy ? "Stop scan" : "Scan for devices"
+        updateScanAnimation()
+        resultsLabel.text = "Devices · \(viewModel.devices.count)"
         scanButton.configuration = configuration
         progressView.isHidden = viewModel.state != .scanning
         progressView.setProgress(Float(viewModel.progress), animated: true)
@@ -143,11 +235,15 @@ final class ScanViewController: UIViewController {
             displayedDevices = viewModel.devices
             tableView.reloadData()
         }
-        tableView.backgroundView?.isHidden = !displayedDevices.isEmpty
+        tableView.tableFooterView?.isHidden = !displayedDevices.isEmpty
+        if !displayedDevices.isEmpty {
+            tableView.tableFooterView?.frame.size.height = 0
+        }
+        view.setNeedsLayout()
         tableView.separatorStyle = displayedDevices.isEmpty ? .none : .singleLine
         emptyStateView.configure(
             image: viewModel.kind == .bluetooth ? "antenna.radiowaves.left.and.right" : "wifi",
-            title: viewModel.isBusy ? "Looking for devices" : "No devices found",
+            title: viewModel.isBusy ? "Looking for devices" : (viewModel.state == .idle ? "Ready to discover" : "No devices found"),
             message: viewModel.kind == .bluetooth
                 ? "Keep nearby devices awake and advertising over Bluetooth."
                 : "Connect to Wi-Fi. Devices that respond to discovery will appear here."
