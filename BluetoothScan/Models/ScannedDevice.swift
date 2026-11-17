@@ -34,3 +34,27 @@ struct ScannedDevice: Identifiable, Equatable, Codable {
         }
     }
 }
+
+extension ScannedDevice {
+    var displayName: String? { customName ?? name }
+
+    var customName: String? {
+        guard let key = customNameKey else { return nil }
+        return UserDefaults.standard.string(forKey: key)
+    }
+
+    func setCustomName(_ value: String) {
+        guard let key = customNameKey else { return }
+        let name = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        if name.isEmpty {
+            UserDefaults.standard.removeObject(forKey: key)
+        } else {
+            UserDefaults.standard.set(name, forKey: key)
+        }
+    }
+
+    private var customNameKey: String? {
+        guard case .bluetooth(let uuid) = address else { return nil }
+        return "bluetoothAlias." + uuid.uuidString
+    }
+}

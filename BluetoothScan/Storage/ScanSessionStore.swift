@@ -14,6 +14,8 @@ struct ScanHistoryFilter {
 }
 
 protocol ScanSessionStore: AnyObject {
+    func count(completion: @escaping (Result<Int, Error>) -> Void)
+    func deleteAll(completion: @escaping (Result<Void, Error>) -> Void)
     func save(_ session: ScanSession, completion: @escaping (Result<Void, Error>) -> Void)
     func fetch(
         filter: ScanHistoryFilter,

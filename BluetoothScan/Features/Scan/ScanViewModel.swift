@@ -32,7 +32,7 @@ final class ScanViewModel {
     private(set) var progress: Double = 0
     private(set) var session: ScanSession?
     private var notices: [Notice] = []
-    private let store: ScanSessionStore
+    let store: ScanSessionStore
     private let bluetoothScanner: DeviceScanning
     private let lanScanner: DeviceScanning
     private var scanner: DeviceScanning { kind == .bluetooth ? bluetoothScanner : lanScanner }

@@ -264,11 +264,12 @@ final class ScanViewController: UIViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        tableView.reloadData()
         render()
     }
 
     @objc private func openSettings() {
-        navigationController?.pushViewController(ScanSettingsViewController(), animated: true)
+        navigationController?.pushViewController(ScanSettingsViewController(store: viewModel.store), animated: true)
     }
 
     private var selectedSort: ResultSort {
@@ -313,8 +314,8 @@ final class ScanViewController: UIViewController {
         switch selectedSort {
         case .name:
             return devices.sorted { first, second in
-                guard let firstName = first.name else { return false }
-                guard let secondName = second.name else { return true }
+                guard let firstName = first.displayName else { return false }
+                guard let secondName = second.displayName else { return true }
                 return firstName.localizedStandardCompare(secondName) == .orderedAscending
             }
         case .signal:
@@ -401,7 +402,7 @@ extension ScanViewController: UITableViewDataSource, UITableViewDelegate {
 extension ScannedDevice {
     var rowContent: UIListContentConfiguration {
         var content = UIListContentConfiguration.subtitleCell()
-        content.text = name ?? "Unnamed device"
+        content.text = displayName ?? "Unnamed device"
         content.textProperties.numberOfLines = 0
         content.secondaryTextProperties.numberOfLines = 0
         content.secondaryTextProperties.color = .secondaryLabel
@@ -422,7 +423,12 @@ extension ScannedDevice {
 }
 
 private final class ScanSettingsViewController: UITableViewController {
-    init() {
+    private let store: ScanSessionStore
+    private var sessionCount: Int?
+    private var isClearing = false
+
+    init(store: ScanSessionStore) {
+        self.store = store
         super.init(style: .insetGrouped)
         title = "Settings"
     }
@@ -432,18 +438,52 @@ private final class ScanSettingsViewController: UITableViewController {
         fatalError("init(coder:) has not been implemented")
     }
 
-    override func numberOfSections(in tableView: UITableView) -> Int { 2 }
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        refreshCount()
+    }
+
+    private func refreshCount() {
+        store.count { [weak self] result in
+            self?.sessionCount = try? result.get()
+            self?.tableView.reloadData()
+        }
+    }
+
+    private func confirmClearHistory() {
+        guard !isClearing, (sessionCount ?? 0) > 0 else { return }
+        let alert = UIAlertController(title: "Clear scan history?", message: "All saved scans will be deleted.", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Delete All", style: .destructive) { [weak self] _ in
+            guard let self else { return }
+            self.isClearing = true
+            self.store.deleteAll { [weak self] result in
+                guard let self else { return }
+                self.isClearing = false
+                self.refreshCount()
+                if case .failure = result {
+                    let error = UIAlertController(title: "Could not clear history", message: "Try again.", preferredStyle: .alert)
+                    error.addAction(UIAlertAction(title: "OK", style: .default))
+                    self.present(error, animated: true)
+                }
+            }
+        })
+        present(alert, animated: true)
+    }
+
+    override func numberOfSections(in tableView: UITableView) -> Int { 3 }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         section == 0 ? ScanDuration.allCases.count : 1
     }
 
     override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        section == 0 ? "Scan duration" : "Permissions"
+        ["Scan duration", "Permissions", "History"][section]
     }
 
     override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
-        section == 0
+        guard section < 2 else { return nil }
+        return section == 0
             ? "Applies to the next Bluetooth or LAN scan."
             : "Manage Bluetooth and Local Network access in iOS Settings."
     }
@@ -456,6 +496,11 @@ private final class ScanSettingsViewController: UITableViewController {
             let duration = ScanDuration.allCases[indexPath.row]
             content.text = "\(duration.rawValue) seconds"
             cell.accessoryType = duration == .preferred ? .checkmark : .none
+        } else if indexPath.section == 2 {
+            content.text = "Clear history"
+            content.secondaryText = sessionCount.map { "\($0) saved scans" }
+            content.textProperties.color = (sessionCount ?? 0) > 0 ? .systemRed : .secondaryLabel
+            cell.accessoryType = .none
         } else {
             content.text = "Open iOS Settings"
             cell.accessoryType = .disclosureIndicator
@@ -469,6 +514,8 @@ private final class ScanSettingsViewController: UITableViewController {
         if indexPath.section == 0 {
             ScanDuration.preferred = ScanDuration.allCases[indexPath.row]
             tableView.reloadSections(IndexSet(integer: 0), with: .none)
+        } else if indexPath.section == 2 {
+            confirmClearHistory()
         } else if let url = URL(string: UIApplication.openSettingsURLString) {
             UIApplication.shared.open(url)
         }

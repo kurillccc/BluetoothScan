@@ -88,6 +88,25 @@ final class CoreDataScanSessionStore: ScanSessionStore {
         }, completion: completion)
     }
 
+    func count(completion: @escaping (Result<Int, Error>) -> Void) {
+        perform({ context in
+            try context.count(for: NSFetchRequest<NSManagedObject>(entityName: "StoredSession"))
+        }, completion: completion)
+    }
+
+    func deleteAll(completion: @escaping (Result<Void, Error>) -> Void) {
+        perform({ context in
+            let request = NSFetchRequest<NSManagedObject>(entityName: "StoredSession")
+            for session in try context.fetch(request) { context.delete(session) }
+            try context.save()
+        }) { result in
+            if case .success = result {
+                NotificationCenter.default.post(name: .scanHistoryDidChange, object: self)
+            }
+            completion(result)
+        }
+    }
+
     private func perform<Value>(
         _ operation: @escaping (NSManagedObjectContext) throws -> Value,
         completion: @escaping (Result<Value, Error>) -> Void
