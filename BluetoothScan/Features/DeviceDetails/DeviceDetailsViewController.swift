@@ -26,7 +26,6 @@ final class DeviceDetailsViewController: UITableViewController {
         navigationItem.largeTitleDisplayMode = .never
         tableView.rowHeight = UITableView.automaticDimension
         tableView.estimatedRowHeight = 72
-        tableView.allowsSelection = false
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -43,8 +42,25 @@ final class DeviceDetailsViewController: UITableViewController {
         content.textProperties.numberOfLines = 0
         content.secondaryTextProperties.numberOfLines = 0
         content.secondaryTextProperties.color = .secondaryLabel
+        cell.selectionStyle = .none
         cell.contentConfiguration = content
         return cell
+    }
+
+    override func tableView(
+        _ tableView: UITableView,
+        contextMenuConfigurationForRowAt indexPath: IndexPath,
+        point: CGPoint
+    ) -> UIContextMenuConfiguration? {
+        let field = viewModel.fields[indexPath.row]
+        guard field.value != "Not available" else { return nil }
+        return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { _ in
+            UIMenu(children: [
+                UIAction(title: "Copy", image: UIImage(systemName: "doc.on.doc")) { _ in
+                    UIPasteboard.general.string = field.value
+                }
+            ])
+        }
     }
 
     override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {

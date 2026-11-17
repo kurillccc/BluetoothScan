@@ -44,15 +44,7 @@ final class ScanSessionViewController: UITableViewController {
         let cell = tableView.dequeueReusableCell(withIdentifier: "Device")
             ?? UITableViewCell(style: .subtitle, reuseIdentifier: "Device")
         let device = session.devices[indexPath.row]
-        var content = cell.defaultContentConfiguration()
-        content.text = device.name ?? "Unnamed device"
-        switch device.address {
-        case .bluetooth(let uuid): content.secondaryText = uuid.uuidString
-        case .lan(let ip, _): content.secondaryText = ip
-        }
-        content.secondaryTextProperties.numberOfLines = 0
-        content.secondaryTextProperties.color = .secondaryLabel
-        cell.contentConfiguration = content
+        cell.contentConfiguration = device.rowContent
         cell.accessoryType = .disclosureIndicator
         return cell
     }

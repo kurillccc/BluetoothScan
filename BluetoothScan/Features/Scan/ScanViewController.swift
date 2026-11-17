@@ -172,6 +172,7 @@ final class ScanViewController: UIViewController {
         hero.setCustomSpacing(28, after: statusLabel)
         hero.setCustomSpacing(24, after: progressView)
         tableView.backgroundColor = .clear
+        tableView.contentInsetAdjustmentBehavior = .always
         tableView.dataSource = self
         tableView.delegate = self
         tableView.rowHeight = UITableView.automaticDimension
@@ -187,7 +188,7 @@ final class ScanViewController: UIViewController {
             tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             emptyStateView.topAnchor.constraint(equalTo: footer.topAnchor, constant: 24),
             emptyStateView.leadingAnchor.constraint(equalTo: footer.leadingAnchor, constant: 24),
             emptyStateView.trailingAnchor.constraint(equalTo: footer.trailingAnchor, constant: -24)
@@ -305,23 +306,7 @@ extension ScanViewController: UITableViewDataSource, UITableViewDelegate {
         let cell = tableView.dequeueReusableCell(withIdentifier: "Device")
             ?? UITableViewCell(style: .subtitle, reuseIdentifier: "Device")
         let device = displayedDevices[indexPath.row]
-        var content = cell.defaultContentConfiguration()
-        content.text = device.name ?? "Unnamed device"
-        content.imageProperties.tintColor = ScanAppearance.accent
-        switch device.address {
-        case .bluetooth(let uuid):
-            content.image = UIImage(systemName: "antenna.radiowaves.left.and.right")
-            let signal = device.rssi.map { "\($0) dBm" } ?? "RSSI unavailable"
-            let status = device.connectionStatus?.rawValue.capitalized ?? "Unknown status"
-            content.secondaryText = "\(uuid.uuidString)\n\(signal) · \(status)"
-        case .lan(let ip, let mac):
-            content.image = UIImage(systemName: "wifi")
-            content.secondaryText = "IP: \(ip)\nMAC: \(mac ?? "Not available")"
-        }
-        content.secondaryTextProperties.color = .secondaryLabel
-        content.secondaryTextProperties.numberOfLines = 0
-        cell.contentConfiguration = content
-        cell.selectionStyle = .default
+        cell.contentConfiguration = device.rowContent
         cell.accessoryType = .disclosureIndicator
         return cell
     }
@@ -334,4 +319,27 @@ extension ScanViewController: UITableViewDataSource, UITableViewDelegate {
         navigationController?.pushViewController(details, animated: true)
     }
 
+}
+
+extension ScannedDevice {
+    var rowContent: UIListContentConfiguration {
+        var content = UIListContentConfiguration.subtitleCell()
+        content.text = name ?? "Unnamed device"
+        content.textProperties.numberOfLines = 0
+        content.secondaryTextProperties.numberOfLines = 0
+        content.secondaryTextProperties.color = .secondaryLabel
+        content.imageProperties.tintColor = ScanAppearance.accent
+        content.imageProperties.reservedLayoutSize = CGSize(width: 32, height: 32)
+        switch address {
+        case .bluetooth:
+            content.image = UIImage(systemName: "antenna.radiowaves.left.and.right")
+            let signal = rssi.map { "\($0) dBm" } ?? "Signal unavailable"
+            let status = connectionStatus?.rawValue.capitalized ?? "Unknown status"
+            content.secondaryText = "\(status) · \(signal)"
+        case .lan(let ip, _):
+            content.image = UIImage(systemName: "wifi")
+            content.secondaryText = "IP: \(ip)"
+        }
+        return content
+    }
 }
