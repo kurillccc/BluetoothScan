@@ -9,6 +9,14 @@ import UIKit
 import Lottie
 
 final class ScanViewController: UIViewController {
+    private enum ResultSort: String {
+        case name = "Name"
+        case signal = "Signal strength"
+        case ip = "IP address"
+    }
+
+    private var bluetoothSort: ResultSort = .signal
+    private var lanSort: ResultSort = .ip
     private let viewModel: ScanViewModel
     private let kindControl = UISegmentedControl(items: ["Bluetooth", "LAN"])
     private let scanButton = UIButton(type: .system)
@@ -38,6 +46,7 @@ final class ScanViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .systemGroupedBackground
         configureLayout()
+        updateSortMenu()
         viewModel.onChange = { [weak self] in self?.render() }
         NotificationCenter.default.addObserver(
             self, selector: #selector(enteredBackground),
@@ -232,8 +241,9 @@ final class ScanViewController: UIViewController {
         case .stopped: statusLabel.text = "Scan stopped · \(viewModel.devices.count) found"
         case .failed: statusLabel.text = "Scan interrupted. Check access and try again."
         }
-        if displayedDevices != viewModel.devices {
-            displayedDevices = viewModel.devices
+        let results = orderedResults()
+        if displayedDevices != results {
+            displayedDevices = results
             tableView.reloadData()
         }
         tableView.tableFooterView?.isHidden = !displayedDevices.isEmpty
@@ -252,8 +262,59 @@ final class ScanViewController: UIViewController {
         showNoticeIfNeeded()
     }
 
+    private var selectedSort: ResultSort {
+        viewModel.kind == .bluetooth ? bluetoothSort : lanSort
+    }
+
+    private func updateSortMenu() {
+        let options: [ResultSort] = [.name, viewModel.kind == .bluetooth ? .signal : .ip]
+        let actions = options.map { option in
+            UIAction(title: option.rawValue, state: option == selectedSort ? .on : .off) { [weak self] _ in
+                guard let self else { return }
+                if self.viewModel.kind == .bluetooth {
+                    self.bluetoothSort = option
+                } else {
+                    self.lanSort = option
+                }
+                self.updateSortMenu()
+                self.render()
+            }
+        }
+        let item = UIBarButtonItem(
+            title: nil,
+            image: UIImage(systemName: "arrow.up.arrow.down"),
+            primaryAction: nil,
+            menu: UIMenu(title: "Sort after scanning", children: actions)
+        )
+        item.accessibilityLabel = "Sort results"
+        navigationItem.rightBarButtonItem = item
+    }
+
+    private func orderedResults() -> [ScannedDevice] {
+        let devices = viewModel.devices
+        guard !viewModel.isBusy else { return devices }
+
+        switch selectedSort {
+        case .name:
+            return devices.sorted { first, second in
+                guard let firstName = first.name else { return false }
+                guard let secondName = second.name else { return true }
+                return firstName.localizedStandardCompare(secondName) == .orderedAscending
+            }
+        case .signal:
+            return devices.sorted { ($0.rssi ?? Int.min) > ($1.rssi ?? Int.min) }
+        case .ip:
+            return devices.sorted { first, second in
+                guard case .lan(let firstIP, _) = first.address,
+                      case .lan(let secondIP, _) = second.address else { return false }
+                return firstIP.compare(secondIP, options: .numeric) == .orderedAscending
+            }
+        }
+    }
+
     @objc private func scanKindChanged() {
         viewModel.selectKind(kinds[kindControl.selectedSegmentIndex])
+        updateSortMenu()
     }
 
     @objc private func scanTapped() {
