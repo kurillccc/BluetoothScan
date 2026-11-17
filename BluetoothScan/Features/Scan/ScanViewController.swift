@@ -231,8 +231,8 @@ final class ScanViewController: UIViewController {
         switch viewModel.state {
         case .idle:
             statusLabel.text = viewModel.kind == .bluetooth
-                ? "Discover nearby Bluetooth LE devices in a 15-second scan."
-                : "Find responding devices on your Wi-Fi network in a 15-second scan."
+                ? "Discover nearby Bluetooth LE devices in a \(ScanDuration.preferred.rawValue)-second scan."
+                : "Find responding devices on your Wi-Fi network in a \(ScanDuration.preferred.rawValue)-second scan."
         case .waiting: statusLabel.text = viewModel.kind == .bluetooth
             ? "Waiting for Bluetooth…" : "Checking local network access…"
         case .scanning: statusLabel.text = "Scanning · \(viewModel.devices.count) found"
@@ -262,6 +262,15 @@ final class ScanViewController: UIViewController {
         showNoticeIfNeeded()
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        render()
+    }
+
+    @objc private func openSettings() {
+        navigationController?.pushViewController(ScanSettingsViewController(), animated: true)
+    }
+
     private var selectedSort: ResultSort {
         viewModel.kind == .bluetooth ? bluetoothSort : lanSort
     }
@@ -287,7 +296,14 @@ final class ScanViewController: UIViewController {
             menu: UIMenu(title: "Sort after scanning", children: actions)
         )
         item.accessibilityLabel = "Sort results"
-        navigationItem.rightBarButtonItem = item
+        navigationItem.rightBarButtonItems = [
+            UIBarButtonItem(
+                image: UIImage(systemName: "gearshape"),
+                style: .plain, target: self, action: #selector(openSettings)
+            ),
+            item
+        ]
+        navigationItem.rightBarButtonItems?.first?.accessibilityLabel = "Settings"
     }
 
     private func orderedResults() -> [ScannedDevice] {
@@ -318,7 +334,7 @@ final class ScanViewController: UIViewController {
     }
 
     @objc private func scanTapped() {
-        if viewModel.isBusy { viewModel.stop() } else { viewModel.start() }
+        if viewModel.isBusy { viewModel.stop() } else { viewModel.start(duration: .preferred) }
     }
 
     @objc private func enteredBackground() {
@@ -402,5 +418,59 @@ extension ScannedDevice {
             content.secondaryText = "IP: \(ip)"
         }
         return content
+    }
+}
+
+private final class ScanSettingsViewController: UITableViewController {
+    init() {
+        super.init(style: .insetGrouped)
+        title = "Settings"
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func numberOfSections(in tableView: UITableView) -> Int { 2 }
+
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        section == 0 ? ScanDuration.allCases.count : 1
+    }
+
+    override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        section == 0 ? "Scan duration" : "Permissions"
+    }
+
+    override func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
+        section == 0
+            ? "Applies to the next Bluetooth or LAN scan."
+            : "Manage Bluetooth and Local Network access in iOS Settings."
+    }
+
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "Setting")
+            ?? UITableViewCell(style: .default, reuseIdentifier: "Setting")
+        var content = cell.defaultContentConfiguration()
+        if indexPath.section == 0 {
+            let duration = ScanDuration.allCases[indexPath.row]
+            content.text = "\(duration.rawValue) seconds"
+            cell.accessoryType = duration == .preferred ? .checkmark : .none
+        } else {
+            content.text = "Open iOS Settings"
+            cell.accessoryType = .disclosureIndicator
+        }
+        cell.contentConfiguration = content
+        return cell
+    }
+
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        if indexPath.section == 0 {
+            ScanDuration.preferred = ScanDuration.allCases[indexPath.row]
+            tableView.reloadSections(IndexSet(integer: 0), with: .none)
+        } else if let url = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(url)
+        }
     }
 }

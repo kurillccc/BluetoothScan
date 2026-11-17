@@ -26,7 +26,7 @@ final class LANScanner: NSObject, DeviceScanning {
         return queue
     }()
 
-    func start() {
+    func start(duration: TimeInterval) {
         guard !isRequested else { return }
         isRequested = true
         runID = UUID()
@@ -49,7 +49,7 @@ final class LANScanner: NSObject, DeviceScanning {
                     self.finish(.failed(.networkChanged))
                     return
                 }
-                self.beginScanning()
+                self.beginScanning(duration: duration)
             case .failure(let error): self.finish(.failed(error))
             }
         }
@@ -60,7 +60,7 @@ final class LANScanner: NSObject, DeviceScanning {
         finish(.cancelled)
     }
 
-    private func beginScanning() {
+    private func beginScanning(duration: TimeInterval) {
         discoveryFinished = false
         resolvingNames = 0
         resolvedAddresses = []
@@ -72,8 +72,8 @@ final class LANScanner: NSObject, DeviceScanning {
                 return
             }
             let elapsed = ProcessInfo.processInfo.systemUptime - startedAt
-            self.onEvent?(.progress(min(elapsed / 15, 1)))
-            if elapsed >= 15 { self.finish(.timedOut) }
+            self.onEvent?(.progress(min(elapsed / duration, 1)))
+            if elapsed >= duration { self.finish(.timedOut) }
         }
         self.timer = timer
         RunLoop.main.add(timer, forMode: .common)

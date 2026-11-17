@@ -63,14 +63,17 @@ final class ScanViewModel {
         onChange?()
     }
 
-    func start() {
+    private var scanDuration: ScanDuration = .standard
+
+    func start(duration: ScanDuration) {
         guard !isBusy else { return }
         devices = []
         progress = 0
         session = nil
+        scanDuration = duration
         state = .waiting
         onChange?()
-        scanner.start()
+        scanner.start(duration: TimeInterval(duration.rawValue))
     }
 
     func stop() {
@@ -113,7 +116,7 @@ final class ScanViewModel {
             notices.append(Notice(
                 title: reachedTimeLimit ? "Time limit reached" : "Scan complete",
                 message: "Found \(count) \(count == 1 ? "device" : "devices")."
-                    + (reachedTimeLimit ? " The scan stopped after 15 seconds; some devices may not have responded yet." : ""),
+                    + (reachedTimeLimit ? " The scan stopped after \(scanDuration.rawValue) seconds; some devices may not have responded yet." : ""),
                 offersSettings: false
             ))
         case .cancelled:
@@ -147,5 +150,16 @@ final class ScanViewModel {
                 self.onChange?()
             }
         }
+    }
+}
+
+enum ScanDuration: Int, CaseIterable {
+    case short = 5
+    case standard = 15
+    case long = 30
+
+    static var preferred: Self {
+        get { Self(rawValue: UserDefaults.standard.integer(forKey: "scanDuration")) ?? .standard }
+        set { UserDefaults.standard.set(newValue.rawValue, forKey: "scanDuration") }
     }
 }

@@ -47,6 +47,6 @@ enum ScanError: Error, LocalizedError {
 
 protocol DeviceScanning: AnyObject {
     var onEvent: ((ScanEvent) -> Void)? { get set }
-    func start()
+    func start(duration: TimeInterval)
     func stop()
 }

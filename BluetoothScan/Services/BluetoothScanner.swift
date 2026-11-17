@@ -15,10 +15,11 @@ final class BluetoothScanner: NSObject, DeviceScanning {
     private var timer: Timer?
     private var isRequested = false
     private var startedAt: TimeInterval?
-    private let duration: TimeInterval = 15
+    private var duration: TimeInterval = 15
 
-    func start() {
+    func start(duration: TimeInterval) {
         guard !isRequested else { return }
+        self.duration = duration
         isRequested = true
         onEvent?(.waiting)
         if let central {
