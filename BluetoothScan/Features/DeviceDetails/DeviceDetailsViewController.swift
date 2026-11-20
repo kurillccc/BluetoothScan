@@ -24,7 +24,7 @@ final class DeviceDetailsViewController: UITableViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = device.displayName ?? viewModel.title
+        title = device.displayTitle
         if case .bluetooth = device.address {
             navigationItem.rightBarButtonItem = UIBarButtonItem(
                 title: "Rename", style: .plain, target: self, action: #selector(renameDevice)
@@ -42,7 +42,7 @@ final class DeviceDetailsViewController: UITableViewController {
         alert.addAction(UIAlertAction(title: "Save", style: .default) { [weak self, weak alert] _ in
             guard let self, let name = alert?.textFields?.first?.text else { return }
             self.device.setCustomName(name)
-            self.title = self.device.displayName ?? self.viewModel.title
+            self.title = self.device.displayTitle
         })
         present(alert, animated: true)
     }

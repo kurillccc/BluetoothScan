@@ -13,11 +13,9 @@ struct DeviceDetailsViewModel {
         let value: String
     }
 
-    let title: String
     let fields: [Field]
 
     init(device: ScannedDevice) {
-        title = device.name ?? "Unnamed device"
         var fields = [Field(title: "Name", value: device.name ?? "Not available")]
         switch device.address {
         case .bluetooth(let uuid):

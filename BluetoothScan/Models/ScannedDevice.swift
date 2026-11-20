@@ -38,6 +38,16 @@ struct ScannedDevice: Identifiable, Equatable, Codable {
 extension ScannedDevice {
     var displayName: String? { customName ?? name }
 
+    var displayTitle: String {
+        if let displayName { return displayName }
+        switch address {
+        case .bluetooth(let uuid):
+            return "Bluetooth device · " + String(uuid.uuidString.prefix(8))
+        case .lan(let ip, _):
+            return ip
+        }
+    }
+
     var customName: String? {
         guard let key = customNameKey else { return nil }
         return UserDefaults.standard.string(forKey: key)

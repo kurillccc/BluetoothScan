@@ -402,7 +402,7 @@ extension ScanViewController: UITableViewDataSource, UITableViewDelegate {
 extension ScannedDevice {
     var rowContent: UIListContentConfiguration {
         var content = UIListContentConfiguration.subtitleCell()
-        content.text = displayName ?? "Unnamed device"
+        content.text = displayTitle
         content.textProperties.numberOfLines = 0
         content.secondaryTextProperties.numberOfLines = 0
         content.secondaryTextProperties.color = .secondaryLabel
@@ -416,7 +416,7 @@ extension ScannedDevice {
             content.secondaryText = "\(status) · \(signal)"
         case .lan(let ip, _):
             content.image = UIImage(systemName: "wifi")
-            content.secondaryText = "IP: \(ip)"
+            content.secondaryText = displayName == nil ? "Hostname unavailable" : "IP: \(ip)"
         }
         return content
     }
